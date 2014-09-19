@@ -21,12 +21,13 @@ A menu rendered normally takes around 0.02 seconds; activating this plugin reduc
 
 * Shaves off 18ms per menu
 * Uses the Transient API
+* Current menu item highlighting is preserved
 * Lightweight
 * Cleanly coded plugin
 
 = How Does it Work =
 
-It's all about the Transient API. When a menu is rendered in the front end, the rendered menu is saved as a transient for caching. Future menu renderings use this cached copy afterwards. When the menu is updated, or when menu locations are changed, the transient is forcibly expired to make way for the updated menu.
+It's all about the Transient API. When a menu is rendered in the front end, the rendered menu is saved as a transient for caching. Future menu renderings use this cached copy afterwards. When the menu is updated, or when menu locations are changed, the transient is forcibly expired to make way for the updated menus.
 
 = This Is Also a Tutorial =
 

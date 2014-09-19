@@ -14,6 +14,9 @@ class GambitCacheMenus {
 	// We use this to prefix all our transients
     const TRANSIENT_PREFIX = 'cached_menu_';
 
+	// Transient option names, used for finding all our transients for deleting
+	const WP_TRANSIENT_OPTION_NAME = '_transient_';
+
 
 	/**
 	 * Hook into WordPress
@@ -56,8 +59,8 @@ class GambitCacheMenus {
 		$menu = get_term( $themeLocations[ $args->theme_location ], 'nav_menu' );
 		$menuID = $menu->term_id;
 
-		if ( get_transient( self::TRANSIENT_PREFIX . $menuID ) === false ) {
-			set_transient( self::TRANSIENT_PREFIX . $menuID, $navMenu, WEEK_IN_SECONDS );
+		if ( get_transient( self::TRANSIENT_PREFIX . $menuID . '_' . $this->getCurrentURLHash() ) === false ) {
+			set_transient( self::TRANSIENT_PREFIX . $menuID . '_' . $this->getCurrentURLHash(), $navMenu, WEEK_IN_SECONDS );
 		}
 
 		return $navMenu;
@@ -82,7 +85,7 @@ class GambitCacheMenus {
 		$menu = get_term( $themeLocations[ $args->theme_location ], 'nav_menu' );
 		$menuID = $menu->term_id;
 
-		$transientMenu = get_transient( self::TRANSIENT_PREFIX . $menuID );
+		$transientMenu = get_transient( self::TRANSIENT_PREFIX . $menuID . '_' . $this->getCurrentURLHash() );
 
 		if ( ! empty( $transientMenu ) ) {
 			return $transientMenu;
@@ -92,18 +95,43 @@ class GambitCacheMenus {
 
 
 	/**
-	 * Force delete our transients
+	 * Delete all our transients when a menu is saved
 	 *
 	 * @return	void
 	 * @since	1.0
 	 */
-	public function deleteTransientMenu( $menuID ) {
+	public function deleteTransientMenu( $menuIDs ) {
 
-		if ( ! empty( $menuID ) ) {
-			delete_transient( self::TRANSIENT_PREFIX . $menuID );
+		global $wpdb;
+		$results = $wpdb->get_results( $wpdb->prepare( 'SELECT option_name FROM ' . $wpdb->prefix . 'options WHERE option_name RLIKE %s', self::WP_TRANSIENT_OPTION_NAME . self::TRANSIENT_PREFIX ) );
+
+		foreach ( $results as $result ) {
+			delete_transient( str_replace( self::WP_TRANSIENT_OPTION_NAME, '', $result->option_name ) );
 		}
 
-		return $menuID;
+		return $menuIDs;
+	}
+
+
+	/**
+	 * Gets the current URL
+	 *
+	 * @see 	http://webcheatsheet.com/php/get_current_page_url.php
+	 * @return	string the current URL
+	 */
+	protected function getCurrentURLHash() {
+		$pageURL = 'http';
+		if ( $_SERVER["HTTPS"] == "on" ) {
+			$pageURL .= "s";
+		}
+		$pageURL .= "://";
+		if ( $_SERVER["SERVER_PORT"] != "80" ) {
+			$pageURL .= $_SERVER["SERVER_NAME"] . ":" . $_SERVER["SERVER_PORT"] . $_SERVER["REQUEST_URI"];
+		} else {
+			$pageURL .= $_SERVER["SERVER_NAME"] . $_SERVER["REQUEST_URI"];
+		}
+
+		return substr( md5( $pageURL ), 0, 9 );
 	}
 
 
